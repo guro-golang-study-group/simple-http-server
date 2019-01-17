@@ -1,40 +1,26 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"net/http"
+	"net"
 	"testing"
-	"time"
 )
 
-func TestHelloWorld(t *testing.T) {
-	server := NewServer()
-	server.HandleFunc("/", func(rw ResponseWriter, r Request) {
-		rw.Headers(map[string]string{
-			"Content-Type": "text/plain",
-		})
-		rw.SendByString("Hello World")
-		rw.Close()
-	})
-	server.Listen(8080)
-
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-
-	resp, err := client.Get("http://localhost:8080")
+// Server accept
+func TestMain(t *testing.T) {
+	ready(t)
+	_, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
-		log.Fatal(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if string(body) != "Hello World" {
+		log.Println(err)
 		t.Fail()
 	}
+}
 
-	server.Close()
+func ready(t *testing.T) {
+	server := Server{}
+	readyChannel := make(chan bool)
+	go server.Serve(readyChannel)
+	if !<-readyChannel {
+		t.Fail()
+	}
 }
